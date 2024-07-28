@@ -210,6 +210,7 @@
 #![cfg_attr(error_generic_member_access, feature(error_generic_member_access))]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![no_std]
+#![cfg_attr(feature = "core_error", feature(error_in_core))]
 #![deny(dead_code, unused_imports, unused_mut)]
 #![cfg_attr(
     not(anyhow_no_unsafe_op_in_unsafe_fn_lint),
@@ -266,18 +267,21 @@ use crate::error::ErrorImpl;
 use crate::ptr::Own;
 use core::fmt::Display;
 
-#[cfg(not(feature = "std"))]
+#[cfg(not(any(feature = "std", feature = "core_error")))]
 use core::fmt::Debug;
 
 #[cfg(feature = "std")]
 use std::error::Error as StdError;
 
-#[cfg(not(feature = "std"))]
+#[cfg(all(not(feature = "std"), not(feature = "core_error")))]
 trait StdError: Debug + Display {
     fn source(&self) -> Option<&(dyn StdError + 'static)> {
         None
     }
 }
+
+#[cfg(all(not(feature = "std"), feature = "core_error"))]
+use core::error::Error as StdError;
 
 #[doc(no_inline)]
 pub use anyhow as format_err;

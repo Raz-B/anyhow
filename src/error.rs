@@ -1,6 +1,6 @@
 use crate::backtrace::Backtrace;
 use crate::chain::Chain;
-#[cfg(any(feature = "std", anyhow_no_ptr_addr_of))]
+#[cfg(any(any(feature = "std", feature = "core_error"), anyhow_no_ptr_addr_of))]
 use crate::ptr::Mut;
 use crate::ptr::{Own, Ref};
 use crate::{Error, StdError};
@@ -14,7 +14,7 @@ use core::ptr::NonNull;
 #[cfg(error_generic_member_access)]
 use std::error::{self, Request};
 
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "core_error"))]
 use core::ops::{Deref, DerefMut};
 
 impl Error {
@@ -25,8 +25,8 @@ impl Error {
     ///
     /// If the error type does not provide a backtrace, a backtrace will be
     /// created here to ensure that a backtrace exists.
-    #[cfg(feature = "std")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
+    #[cfg(any(feature = "std", feature = "core_error"))]
+    #[cfg_attr(docsrs, doc(cfg(any(feature = "std", feature = "core_error"))))]
     #[cold]
     #[must_use]
     pub fn new<E>(error: E) -> Self
@@ -83,7 +83,7 @@ impl Error {
         Error::from_adhoc(message, backtrace!())
     }
 
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "core_error"))]
     #[cold]
     pub(crate) fn from_std<E>(error: E, backtrace: Option<Backtrace>) -> Self
     where
@@ -554,8 +554,8 @@ impl Error {
     }
 }
 
-#[cfg(feature = "std")]
-#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
+#[cfg(any(feature = "std", feature = "core_error"))]
+#[cfg_attr(docsrs, doc(cfg(any(feature = "std", feature = "core_error"))))]
 impl<E> From<E> for Error
 where
     E: StdError + Send + Sync + 'static,
@@ -567,8 +567,8 @@ where
     }
 }
 
-#[cfg(feature = "std")]
-#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
+#[cfg(any(feature = "std", feature = "core_error"))]
+#[cfg_attr(docsrs, doc(cfg(any(feature = "std", feature = "core_error"))))]
 impl Deref for Error {
     type Target = dyn StdError + Send + Sync + 'static;
 
@@ -577,8 +577,8 @@ impl Deref for Error {
     }
 }
 
-#[cfg(feature = "std")]
-#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
+#[cfg(any(feature = "std", feature = "core_error"))]
+#[cfg_attr(docsrs, doc(cfg(any(feature = "std", feature = "core_error"))))]
 impl DerefMut for Error {
     fn deref_mut(&mut self) -> &mut Self::Target {
         unsafe { ErrorImpl::error_mut(self.inner.by_mut()) }
@@ -906,7 +906,7 @@ impl ErrorImpl {
         unsafe { (vtable(this.ptr).object_ref)(this).deref() }
     }
 
-    #[cfg(feature = "std")]
+    #[cfg(any(feature = "std", feature = "core_error"))]
     pub(crate) unsafe fn error_mut(this: Mut<Self>) -> &mut (dyn StdError + Send + Sync + 'static) {
         // Use vtable to attach E's native StdError vtable for the right
         // original type E.
@@ -1009,14 +1009,14 @@ impl From<Error> for Box<dyn StdError + 'static> {
     }
 }
 
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "core_error"))]
 impl AsRef<dyn StdError + Send + Sync> for Error {
     fn as_ref(&self) -> &(dyn StdError + Send + Sync + 'static) {
         &**self
     }
 }
 
-#[cfg(feature = "std")]
+#[cfg(any(feature = "std", feature = "core_error"))]
 impl AsRef<dyn StdError> for Error {
     fn as_ref(&self) -> &(dyn StdError + 'static) {
         &**self
